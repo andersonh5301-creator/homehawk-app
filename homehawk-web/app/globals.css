@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Brand palette (Packers-inspired) */
+:root {
+  --brand-primary: #2C5E27; /* Green */
+  --brand-accent:  #FFD700; /* Gold */
+  --brand-text:    #111111; /* Dark text */
+}
