@@ -1,19 +1,29 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export async function POST(req: Request) {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2023-10-16" });
-  const { priceId, email } = await req.json();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-01-28.clover" });
 
-  const origin = new URL(req.url).origin;
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    payment_method_types: ["card"],
-    customer_email: email,
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${origin}/dashboard?ok=1`,
-    cancel_url: `${origin}/plans`,
-  });
+export async function POST(request: NextRequest) {
+  try {
+    const { priceId, email, userId, mode, orderType } = await request.json();
 
-  return NextResponse.json({ url: session.url });
+    if (!priceId || !email || !userId || !mode) {
+      return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode,
+      customer_email: email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      metadata: { userId, orderType: orderType ?? "" },
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/dashboard?success=true`,
+      cancel_url:  `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/plans?cancelled=true`,
+    });
+
+    return NextResponse.json({ url: session.url });
+  } catch (err: any) {
+    console.error("Checkout error:", err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
 }
